@@ -2,6 +2,7 @@ import os
 import sys
 import string
 import random
+import hashlib
 import secrets
 import argparse
 import subprocess
@@ -22,13 +23,25 @@ def remove_exif_data(file_path):
     print(f"{BOLD}{GREEN}File {filename}{extension} has been changed to {new_filename} and exif data has been removed{BOLD}")
 
 def remove_exif_data_recursively(dir_path):
-    for filename in os.listdir(dir_path):
-        file_path = os.path.join(dir_path, filename)
-        if os.path.isfile(file_path):
-            remove_exif_data(file_path)
-        elif os.path.isdir(file_path):
-            remove_exif_data_recursively(file_path)
-    subprocess.call(['exiftool', '-overwrite_original', '-all:all=', '-r', dir_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    file_hashes = {}
+    for root, dirs, files in os.walk(dir_path):
+        for filename in files:
+            file_path = os.path.join(root, filename)
+            with open(file_path, 'rb') as f:
+                hash = hashlib.md5(f.read()).hexdigest()
+                if hash in file_hashes:
+                    os.remove(file_path)
+                else:
+                    file_hashes[hash] = file_path
+
+    subprocess.call(['exiftool', '-overwrite_original', '-all=', '-r', dir_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    print(f"{BOLD}{GREEN}Exif data has been removed from all files in directory {dir_path}{BOLD}")
+
+    for root, dirs, files in os.walk(dir_path):
+        for dir in dirs:
+            dir_path = os.path.join(root, dir)
+            if not os.listdir(dir_path):
+                os.rmdir(dir_path)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Remove exif data from a file or directory recursively')
