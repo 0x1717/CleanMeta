@@ -33,8 +33,9 @@ def remove_exif_data_recursively(dir_path):
                     os.remove(file_path)
                 else:
                     file_hashes[hash] = file_path
+                    remove_exif_data(file_path)
 
-    subprocess.call(['exiftool', '-overwrite_original', '-all=', '-r', dir_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.call(['exiftool', '-overwrite_original', '-all:all=', '-r', dir_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     print(f"{BOLD}{GREEN}Exif data has been removed from all files in directory {dir_path}{BOLD}")
 
     for root, dirs, files in os.walk(dir_path):
